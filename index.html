@@ -3,86 +3,205 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LEGO Sticker Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #171923;
-  color: white;
-}
-header {
-  padding: 18px;
-  background: #242938;
-  text-align: center;
-}
-main { padding: 16px; }
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-button, .upload {
-  background: #3978e8;
-  color: white;
-  border: 0;
-  border-radius: 7px;
-  padding: 11px 15px;
-  cursor: pointer;
-}
-button:hover, .upload:hover { background: #245fc4; }
-input[type=file] { display: none; }
-.workspace {
-  display: flex;
-  justify-content: center;
-  overflow: auto;
-  padding: 15px;
-  background: #242938;
-  border-radius: 10px;
-}
-#sheet {
-  position: relative;
-  width: 794px;
-  height: 1123px;
-  flex-shrink: 0;
-  background: white;
-  background-image:
-    linear-gradient(to right, #dce1e8 1px, transparent 1px),
-    linear-gradient(to bottom, #dce1e8 1px, transparent 1px);
-  background-size: 30.24px 12.1px;
-  overflow: hidden;
-}
-.sticker {
-  position: absolute;
-  cursor: move;
-  border: 1px dashed #3978e8;
-  transform-origin: center;
-  user-select: none;
-}
-.sticker.selected {
-  outline: 2px solid #ff9d32;
-}
-.sticker img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  object-fit: fill;
-}
-.controls {
-  margin-top: 15px;
-  padding: 15px;
-  background: #242938;
-  border-radius: 10px;
-}
-.controls input { max-width: 100%; }
-#empty { color: #333; text-align: center; padding-top: 40px; }
+*{box-sizing:border-box}
+body{margin:0;background:#151923;color:#f4f5f7;font-family:Arial,sans-serif}
+header{padding:18px;background:#222a38;text-align:center}
+h1{font-size:23px;margin:0}
+main{max-width:1200px;margin:auto;padding:16px}
+.toolbar,.panel{background:#222a38;padding:14px;border-radius:10px;margin-bottom:14px}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap}
+button,.upload{background:#3679e8;color:white;border:0;padding:11px 15px;border-radius:7px;cursor:pointer;font-size:14px}
+button:hover,.upload:hover{background:#245fc4}
+button:disabled{opacity:.4}
+input[type=file]{display:none}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:15px}
+.workspace{overflow:auto;background:#303746;padding:15px;border-radius:10px;display:flex;justify-content:center;align-items:flex-start;min-height:450px}
+#sheet{position:relative;width:794px;height:1123px;flex:none;background:white;box-shadow:0 2px 15px #0008;overflow:hidden}
+.sticker{position:absolute;cursor:move;transform-origin:center;touch-action:none;user-select:none}
+.sticker img{width:100%;height:100%;display:block;pointer-events:none}
+.sticker.selected{outline:2px dashed #1684ff;outline-offset:2px}
+#grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(to right,#9ca3af 1px,transparent 1px),linear-gradient(to bottom,#9ca3af 1px,transparent 1px);background-size:30.236px 12.094px;opacity:.7}
+#empty{position:absolute;inset:0;display:grid;place-items:center;color:#777;text-align:center;padding:20px;pointer-events:none}
+.panel h3{margin:0 0 14px}
+.control{margin:15px 0}
+.control label{display:block;font-size:13px;margin-bottom:7px;color:#d0d5df}
+.control input{width:100%}
+input[type=number]{background:#151923;color:white;border:1px solid #566176;padding:8px;border-radius:5px}
+small{color:#aeb8c9}
+.status{font-size:13px;color:#9cddae;margin-top:10px}
+@media(max-width:750px){.layout{grid-template-columns:1fr}.workspace{justify-content:flex-start}.panel{order:2}}
 </style>
 </head>
 <body>
-<header>
-  <h2>LEGO Sticker Tool</h2>
+<header><h1>LEGO Sticker Tool</h1></header>
+<main>
+<div class="toolbar">
+<label class="upload">＋ Dodaj zdjęcia<input id="files" type="file" accept="image/*" multiple></label>
+<button id="delete">Usuń naklejkę</button>
+<button id="duplicate">Duplikuj</button>
+<button id="export">Eksportuj PDF A4</button>
+<button id="gridToggle">Ukryj siatkę</button>
+</div>
+<div class="layout">
+<div>
+<div class="workspace">
+<div id="sheet">
+<div id="empty">Dodaj zdjęcie, aby rozpocząć.<br>Przesuwaj naklejki myszką.</div>
+<div id="grid"></div>
+</div>
+</div>
+<p><small>Podgląd A4 • Siatka pomocnicza: 8 × 3,2 mm • Siatka nie będzie drukowana.</small></p>
+</div>
+<aside class="panel">
+<h3>Ustawienia naklejki</h3>
+<div id="noSelection"><small>Wybierz naklejkę na arkuszu.</small></div>
+<div id="settings" hidden>
+<div class="control"><label>Szerokość (mm)</label><input id="width" type="number" min="1" max="210" step=".1"></div>
+<div class="control"><label>Wysokość (mm)</label><input id="height" type="number" min="1" max="297" step=".1"></div>
+<div class="control"><label>Pozycja X (mm)</label><input id="x" type="number" step=".1"></div>
+<div class="control"><label>Pozycja Y (mm)</label><input id="y" type="number" step=".1"></div>
+<div class="control"><label>Obrót (stopnie)</label><input id="rotation" type="number" step="1"></div>
+<button id="fit">Dopasuj proporcje zdjęcia</button>
+</div>
+<div class="control">
+<label>Rozmiar podglądu</label>
+<input id="zoom" type="range" min="30" max="100" value="65">
+</div>
+<p><small>Wymiary arkusza: 210 × 297 mm.</small></p>
+<div class="status" id="status">Gotowy do pracy.</div>
+</aside>
+</div>
+</main>
+<script>
+const sheet=document.getElementById('sheet');
+const grid=document.getElementById('grid');
+const empty=document.getElementById('empty');
+const files=document.getElementById('files');
+const status=document.getElementById('status');
+const scale=794/210;
+let stickers=[],selected=null,nextId=1,showGrid=true;
+
+function mm(v){return v*scale}
+function px(v){return v/scale}
+function select(s){
+ selected=s;
+ document.querySelectorAll('.sticker').forEach(e=>e.classList.toggle('selected',e.dataset.id===(s?s.id:'')));
+ document.getElementById('settings').hidden=!s;
+ document.getElementById('noSelection').hidden=!!s;
+ if(!s)return;
+ ['width','height','x','y','rotation'].forEach(k=>document.getElementById(k).value=Number(s[k]).toFixed(1));
+}
+function draw(s){
+ s.el.style.width=mm(s.width)+'px';
+ s.el.style.height=mm(s.height)+'px';
+ s.el.style.left=mm(s.x)+'px';
+ s.el.style.top=mm(s.y)+'px';
+ s.el.style.transform=`rotate(${s.rotation}deg)`;
+}
+function addImage(src){
+ const img=new Image();
+ img.onload=()=>{
+ const s={id:String(nextId++),src,width:Math.min(40,img.naturalWidth/scale),height:0,x:10,y:10,rotation:0,el:null};
+ s.height=s.width*img.naturalHeight/img.naturalWidth;
+ if(s.height>60){s.height=60;s.width=s.height*img.naturalWidth/img.naturalHeight}
+ const el=document.createElement('div');
+ el.className='sticker';el.dataset.id=s.id;
+ const picture=document.createElement('img');picture.src=src;
+ el.appendChild(picture);sheet.appendChild(el);s.el=el;
+ stickers.push(s);draw(s);empty.style.display='none';select(s);
+ status.textContent='Dodano naklejkę.';
+ };
+ img.src=src;
+}
+files.addEventListener('change',e=>{
+ [...e.target.files].forEach(file=>{
+ if(!file.type.startsWith('image/'))return;
+ const reader=new FileReader();
+ reader.onload=()=>addImage(reader.result);
+ reader.readAsDataURL(file);
+ });
+ files.value='';
+});
+sheet.addEventListener('pointerdown',e=>{
+ const el=e.target.closest('.sticker');
+ if(!el){if(e.target===sheet||e.target===empty)select(null);return}
+ const s=stickers.find(a=>a.id===el.dataset.id);
+ select(s);
+ const startX=e.clientX,startY=e.clientY,oldX=s.x,oldY=s.y;
+ el.setPointerCapture(e.pointerId);
+ function move(ev){
+ s.x=Math.max(0,Math.min(210-s.width,oldX+(ev.clientX-startX)/scale));
+ s.y=Math.max(0,Math.min(297-s.height,oldY+(ev.clientY-startY)/scale));
+ draw(s);
+ document.getElementById('x').value=s.x.toFixed(1);
+ document.getElementById('y').value=s.y.toFixed(1);
+ }
+ function end(){el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',end)}
+ el.addEventListener('pointermove',move);el.addEventListener('pointerup',end);
+});
+['width','height','x','y','rotation'].forEach(k=>{
+ document.getElementById(k).addEventListener('input',e=>{
+ if(!selected)return;
+ selected[k]=Number(e.target.value)||0;
+ selected[k]=Math.max(k==='width'||k==='height'?1:-360,selected[k]);
+ draw(selected);
+ });
+});
+document.getElementById('fit').onclick=()=>{
+ if(!selected)return;
+ const img=new Image();
+ img.onload=()=>{
+ selected.height=selected.width*img.naturalHeight/img.naturalWidth;
+ draw(selected);select(selected);
+ };
+ img.src=selected.src;
+};
+document.getElementById('delete').onclick=()=>{
+ if(!selected)return;
+ selected.el.remove();stickers=stickers.filter(s=>s!==selected);select(null);
+ empty.style.display=stickers.length?'none':'grid';
+};
+document.getElementById('duplicate').onclick=()=>{
+ if(!selected)return;
+ const copy={...selected,id:String(nextId++),x:Math.min(210-selected.width,selected.x+5),y:Math.min(297-selected.height,selected.y+5),el:null};
+ const el=document.createElement('div');el.className='sticker';el.dataset.id=copy.id;
+ const img=document.createElement('img');img.src=copy.src;el.appendChild(img);sheet.appendChild(el);copy.el=el;
+ stickers.push(copy);draw(copy);select(copy);
+};
+document.getElementById('gridToggle').onclick=()=>{
+ showGrid=!showGrid;grid.style.display=showGrid?'block':'none';
+ document.getElementById('gridToggle').textContent=showGrid?'Ukryj siatkę':'Pokaż siatkę';
+};
+document.getElementById('zoom').oninput=e=>{
+ sheet.style.zoom=e.target.value/65;
+};
+document.getElementById('export').onclick=async()=>{
+ if(!stickers.length){alert('Najpierw dodaj zdjęcie.');return}
+ if(!window.jspdf){alert('Nie udało się załadować biblioteki PDF. Sprawdź internet.');return}
+ const {jsPDF}=window.jspdf;
+ const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+ for(const s of stickers){
+ const img=new Image();img.src=s.src;
+ await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject});
+ const canvas=document.createElement('canvas');
+ canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+ canvas.getContext('2d').drawImage(img,0,0);
+ const data=canvas.toDataURL('image/png');
+ pdf.saveGraphicsState();
+ const cx=s.x+s.width/2,cy=s.y+s.height/2;
+ const rad=s.rotation*Math.PI/180;
+ const c=Math.cos(rad),sn=Math.sin(rad);
+ pdf.setCurrentTransformationMatrix(new pdf.Matrix(c,sn,-sn,c,cx,cy));
+ pdf.addImage(data,'PNG',-s.width/2,-s.height/2,s.width,s.height);
+ pdf.restoreGraphicsState();
+ }
+ pdf.save('LEGO-Sticker-Tool-A4.pdf');
+ status.textContent='PDF zapisany.';
+};
+</script>
+</body>
+</html>
