@@ -3,49 +3,53 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LEGO Sticker Studio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#171b25;color:#f5f6fa;font-family:Arial,sans-serif}
-header{background:#242c3b;padding:17px 22px;display:flex;align-items:center;justify-content:space-between}
-header h1{font-size:21px;margin:0}
-header span{font-size:12px;color:#aab6c9}
+header{background:#242c3b;padding:17px 22px}
+header h1{font-size:22px;margin:0}
+header p{font-size:12px;color:#aab6c9;margin:5px 0 0}
 main{max-width:1400px;margin:auto;padding:16px}
 .toolbar{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px}
-button,.upload{border:0;border-radius:7px;padding:11px 15px;background:#3979e8;color:white;cursor:pointer;font-size:14px}
+button,.upload{border:0;border-radius:7px;padding:11px 14px;background:#3979e8;color:white;cursor:pointer;font-size:14px}
 button:hover,.upload:hover{background:#245fc4}
 button.secondary{background:#414c60}
+button.active{background:#218653}
 button.danger{background:#b94444}
+button:disabled{opacity:.5}
 input[type=file]{display:none}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 275px;gap:15px}
 .workspace{background:#303949;border-radius:10px;padding:16px;overflow:auto;min-height:500px}
-.sheet-wrap{width:793.7px;height:1122.5px;position:relative;flex:none;margin:auto}
-#sheet{position:absolute;inset:0;background:white;overflow:hidden;box-shadow:0 2px 15px #0007}
+.sheet-wrap{position:relative;width:793.7px;height:1122.5px;flex:none;margin:auto}
+#sheet{position:absolute;left:0;top:0;width:793.7px;height:1122.5px;background:white;overflow:hidden;box-shadow:0 2px 15px #0007;transform-origin:top left}
 #grid{position:absolute;inset:0;pointer-events:none;z-index:100;background-image:linear-gradient(to right,#777 1px,transparent 1px),linear-gradient(to bottom,#777 1px,transparent 1px);background-size:30.236px 12.094px;opacity:.55}
 #empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#888;font-size:18px;pointer-events:none}
 .sticker{position:absolute;cursor:move;user-select:none;touch-action:none}
 .sticker img{width:100%;height:100%;display:block;pointer-events:none}
 .sticker.selected{outline:2px solid #1685ff;z-index:10}
-.handle{display:none;position:absolute;width:13px;height:13px;background:#1685ff;border:2px solid white;border-radius:50%;right:-7px;bottom:-7px;cursor:nwse-resize;z-index:11;touch-action:none}
+.handle{display:none;position:absolute;width:14px;height:14px;background:#1685ff;border:2px solid white;border-radius:50%;right:-7px;bottom:-7px;cursor:nwse-resize;z-index:11;touch-action:none}
 .sticker.selected .handle{display:block}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:15px}
 .sidebar{background:#242c3b;padding:16px;border-radius:10px}
 .sidebar h3{margin:0 0 15px;font-size:17px}
 .field{margin:14px 0}
 .field label{display:block;font-size:13px;color:#c4cddd;margin-bottom:7px}
-.field input{width:100%;padding:9px;background:#171b25;color:white;border:1px solid #59657a;border-radius:6px}
+.field input,.field select{width:100%;padding:9px;background:#171b25;color:white;border:1px solid #59657a;border-radius:6px}
 .field input[type=range]{padding:0}
+.field select{cursor:pointer}
 .hint{font-size:12px;color:#aab6c9;line-height:1.6}
-.status{color:#a5d9ae;font-size:12px;margin-top:14px}
+.status{color:#a5d9ae;font-size:12px;margin-top:14px;line-height:1.5}
 .sheet-info{font-size:12px;color:#b9c4d5;margin:10px 0}
-@media(max-width:850px){.layout{grid-template-columns:1fr}.sidebar{order:2}.sheet-wrap{margin:0}}
+hr{border-color:#465064;margin:20px 0}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.sheet-wrap{margin:0}.sidebar{order:2}}
 </style>
 </head>
 <body>
 <header>
 <h1>LEGO Sticker Studio</h1>
-<span>Projektowanie naklejek LEGO</span>
+<p>Edytor naklejek LEGO • A4 • 8 × 3,2 mm</p>
 </header>
 
 <main>
@@ -53,10 +57,12 @@ input[type=file]{display:none}
 <label class="upload">＋ Dodaj zdjęcia
 <input type="file" id="files" accept="image/*" multiple>
 </label>
+<button id="paste" class="secondary">Wklej zdjęcie (Ctrl+V)</button>
+<button id="snap" class="active">Przyciąganie: WŁ.</button>
+<button id="gridButton" class="secondary">Ukryj siatkę</button>
 <button id="duplicate" class="secondary">Duplikuj</button>
 <button id="delete" class="danger">Usuń</button>
 <button id="front" class="secondary">Na wierzch</button>
-<button id="gridButton" class="secondary">Ukryj siatkę</button>
 <button id="export">Eksportuj PDF A4</button>
 </div>
 
@@ -65,12 +71,14 @@ input[type=file]{display:none}
 <div class="workspace">
 <div class="sheet-wrap" id="sheetWrap">
 <div id="sheet">
-<div id="empty">Twój arkusz jest pusty.<br>Dodaj zdjęcia, aby rozpocząć projektowanie.</div>
+<div id="empty">Twój arkusz jest pusty.<br>Dodaj lub wklej zdjęcie, aby rozpocząć.</div>
 <div id="grid"></div>
 </div>
 </div>
 </div>
-<div class="sheet-info">Format A4: 210 × 297 mm | Siatka: 8 × 3,2 mm | Siatka nie jest drukowana.</div>
+<div class="sheet-info">
+A4: 210 × 297 mm | Pole siatki: 8 × 3,2 mm | Siatka nie jest drukowana.
+</div>
 </section>
 
 <aside class="sidebar">
@@ -78,12 +86,19 @@ input[type=file]{display:none}
 <div id="noSelection" class="hint">Zaznacz naklejkę, aby edytować jej parametry.</div>
 <div id="settings" hidden>
 <div class="field">
-<label>Szerokość (mm)</label>
-<input id="width" type="number" min="0.1" step="0.1">
+<label>Jednostka wymiarów</label>
+<select id="unit">
+<option value="mm">Milimetry (mm)</option>
+<option value="cm">Centymetry (cm)</option>
+</select>
 </div>
 <div class="field">
-<label>Wysokość (mm)</label>
-<input id="height" type="number" min="0.1" step="0.1">
+<label>Szerokość</label>
+<input id="width" type="number" min="0.01" step="0.1">
+</div>
+<div class="field">
+<label>Wysokość</label>
+<input id="height" type="number" min="0.01" step="0.1">
 </div>
 <div class="field">
 <label>Pozycja pozioma X (mm)</label>
@@ -100,13 +115,15 @@ input[type=file]{display:none}
 <button id="ratio" class="secondary">Przywróć proporcje zdjęcia</button>
 </div>
 
-<hr style="border-color:#465064;margin:20px 0">
+<hr>
 <h3>Widok</h3>
 <div class="field">
 <label>Powiększenie arkusza</label>
 <input id="zoom" type="range" min="35" max="100" value="70">
 </div>
-<p class="hint">Powiększenie widoku nie zmienia rzeczywistych wymiarów wydruku.</p>
+<p class="hint">
+Wymiary wprowadzaj w mm lub cm. Przyciąganie dopasowuje pozycje i rozmiary do pól siatki.
+</p>
 <div class="status" id="status">Gotowy do pracy.</div>
 </aside>
 </div>
@@ -118,27 +135,44 @@ const sheet=$('sheet');
 const grid=$('grid');
 const sheetWrap=$('sheetWrap');
 const PX=793.7/210;
+const CELL_X=8;
+const CELL_Y=3.2;
+
 let items=[];
 let selected=null;
 let nextId=1;
 let gridVisible=true;
+let snapEnabled=true;
+let zoom=0.7;
+let unit='mm';
 
 function mm(v){return Number(v)*PX}
-function toMM(v){return v/PX}
+function snapValue(v,step){return Math.round(v/step)*step}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+
+function toMm(value){
+ return unit==='cm'?value*10:value;
+}
+function fromMm(value){
+ return unit==='cm'?value/10:value;
+}
 
 function selectItem(item){
  selected=item;
  document.querySelectorAll('.sticker').forEach(el=>{
-  el.classList.toggle('selected',item && el.dataset.id===item.id);
+  el.classList.toggle('selected',!!item&&el.dataset.id===item.id);
  });
  $('settings').hidden=!item;
  $('noSelection').hidden=!!item;
- if(item){
-  ['width','height','posX','posY','rotation'].forEach((key,i)=>{
-   const val=[item.w,item.h,item.x,item.y,item.rotation][i];
-   $(key).value=Number(val.toFixed(2));
-  });
- }
+ if(item)updateFields(item);
+}
+
+function updateFields(item){
+ $('width').value=Number(fromMm(item.w).toFixed(3));
+ $('height').value=Number(fromMm(item.h).toFixed(3));
+ $('posX').value=Number(item.x.toFixed(2));
+ $('posY').value=Number(item.y.toFixed(2));
+ $('rotation').value=item.rotation;
 }
 
 function render(item){
@@ -149,14 +183,25 @@ function render(item){
  item.el.style.transform='rotate('+item.rotation+'deg)';
 }
 
+function snapPosition(item){
+ if(!snapEnabled)return;
+ item.x=snapValue(item.x,CELL_X);
+ item.y=snapValue(item.y,CELL_Y);
+ item.w=Math.max(CELL_X,snapValue(item.w,CELL_X));
+ item.h=Math.max(CELL_Y,snapValue(item.h,CELL_Y));
+ item.x=clamp(item.x,0,210-item.w);
+ item.y=clamp(item.y,0,297-item.h);
+}
+
 function addSticker(src){
  const image=new Image();
  image.onload=()=>{
-  const w=Math.min(40,image.naturalWidth/PX);
-  const h=w*image.naturalHeight/image.naturalWidth;
+  let w=Math.min(40,image.naturalWidth/PX);
+  let h=w*image.naturalHeight/image.naturalWidth;
+  if(h>60){h=60;w=h*image.naturalWidth/image.naturalHeight}
   const item={
-   id:String(nextId++),src,
-   w,h,x:10,y:10,rotation:0,
+   id:String(nextId++),
+   src:src,w,h,x:10,y:10,rotation:0,
    naturalW:image.naturalWidth,
    naturalH:image.naturalHeight,
    el:null
@@ -172,23 +217,72 @@ function addSticker(src){
   sheet.appendChild(el);
   item.el=el;
   items.push(item);
+  snapPosition(item);
   render(item);
   $('empty').style.display='none';
   selectItem(item);
-  $('status').textContent='Dodano nową naklejkę.';
+  $('status').textContent='Dodano naklejkę.';
  };
+ image.onerror=()=>{$('status').textContent='Nie udało się odczytać zdjęcia.'};
  image.src=src;
 }
 
+function readFile(file){
+ if(!file||!file.type.startsWith('image/'))return;
+ const reader=new FileReader();
+ reader.onload=()=>addSticker(reader.result);
+ reader.readAsDataURL(file);
+}
+
 $('files').addEventListener('change',e=>{
- [...e.target.files].forEach(file=>{
-  if(!file.type.startsWith('image/'))return;
-  const reader=new FileReader();
-  reader.onload=()=>addSticker(reader.result);
-  reader.readAsDataURL(file);
- });
+ [...e.target.files].forEach(readFile);
  e.target.value='';
 });
+
+// Wklejanie obrazów ze schowka
+document.addEventListener('paste',e=>{
+ const data=e.clipboardData;
+ if(!data)return;
+ const files=[...data.items]
+  .filter(item=>item.type.startsWith('image/'))
+  .map(item=>item.getAsFile())
+  .filter(Boolean);
+ if(files.length){
+  e.preventDefault();
+  files.forEach(readFile);
+  $('status').textContent='Wklejono obraz ze schowka.';
+ }
+});
+
+$('paste').onclick=async()=>{
+ try{
+  if(!navigator.clipboard||!navigator.clipboard.read){
+   $('status').textContent='Użyj Ctrl+V po skopiowaniu obrazu.';
+   return;
+  }
+  const clipboard=await navigator.clipboard.read();
+  let found=false;
+  for(const entry of clipboard){
+   const type=entry.types.find(t=>t.startsWith('image/'));
+   if(type){
+    const blob=await entry.getType(type);
+    readFile(blob);
+    found=true;
+   }
+  }
+  if(!found)$('status').textContent='W schowku nie znaleziono obrazu.';
+ }catch(error){
+  $('status').textContent='Użyj Ctrl+V. Przeglądarka może wymagać zgody na schowek.';
+ }
+};
+
+function pointerPosition(ev){
+ const rect=sheet.getBoundingClientRect();
+ return {
+  x:(ev.clientX-rect.left)*(793.7/rect.width)/PX,
+  y:(ev.clientY-rect.top)*(1122.5/rect.height)/PX
+ };
+}
 
 sheet.addEventListener('pointerdown',e=>{
  const el=e.target.closest('.sticker');
@@ -198,29 +292,33 @@ sheet.addEventListener('pointerdown',e=>{
  }
  const item=items.find(i=>i.id===el.dataset.id);
  selectItem(item);
-
- const startX=e.clientX;
- const startY=e.clientY;
- const oldX=item.x;
- const oldY=item.y;
+ const start=pointerPosition(e);
+ const old={x:item.x,y:item.y,w:item.w,h:item.h};
  const resizing=e.target.classList.contains('handle');
-
  el.setPointerCapture(e.pointerId);
 
  function move(ev){
-  const dx=(ev.clientX-startX)/PX;
-  const dy=(ev.clientY-startY)/PX;
+  const now=pointerPosition(ev);
+  const dx=now.x-start.x;
+  const dy=now.y-start.y;
   if(resizing){
-   item.w=Math.max(1,oldW+dx);
-   item.h=Math.max(1,oldH+dy);
+   item.w=Math.max(.1,old.w+dx);
+   item.h=Math.max(.1,old.h+dy);
+   if(snapEnabled){
+    item.w=Math.max(CELL_X,snapValue(item.w,CELL_X));
+    item.h=Math.max(CELL_Y,snapValue(item.h,CELL_Y));
+   }
   }else{
-   item.x=Math.max(0,Math.min(210-item.w,oldX+dx));
-   item.y=Math.max(0,Math.min(297-item.h,oldY+dy));
+   item.x=clamp(old.x+dx,0,210-item.w);
+   item.y=clamp(old.y+dy,0,297-item.h);
+   if(snapEnabled){
+    item.x=clamp(snapValue(item.x,CELL_X),0,210-item.w);
+    item.y=clamp(snapValue(item.y,CELL_Y),0,297-item.h);
+   }
   }
   render(item);
   updateFields(item);
  }
- const oldW=item.w,oldH=item.h;
  function end(){
   el.removeEventListener('pointermove',move);
   el.removeEventListener('pointerup',end);
@@ -231,35 +329,38 @@ sheet.addEventListener('pointerdown',e=>{
  el.addEventListener('pointercancel',end);
 });
 
-function updateFields(i){
- $('width').value=i.w.toFixed(2);
- $('height').value=i.h.toFixed(2);
- $('posX').value=i.x.toFixed(2);
- $('posY').value=i.y.toFixed(2);
- $('rotation').value=i.rotation;
-}
-
-function updateFromField(key,value){
+function changeField(key,value){
  if(!selected)return;
- const v=Number(value);
+ let v=Number(value);
  if(!Number.isFinite(v))return;
- if(key==='w')selected.w=Math.max(.1,Math.min(210,v));
- if(key==='h')selected.h=Math.max(.1,Math.min(297,v));
- if(key==='x')selected.x=Math.max(0,Math.min(210-selected.w,v));
- if(key==='y')selected.y=Math.max(0,Math.min(297-selected.h,v));
+ if(key==='w'||key==='h'){
+  v=toMm(v);
+  if(snapEnabled)v=snapValue(v,key==='w'?CELL_X:CELL_Y);
+  selected[key]=clamp(v,.1,key==='w'?210:297);
+ }
+ if(key==='x'||key==='y'){
+  if(snapEnabled)v=snapValue(v,key==='x'?CELL_X:CELL_Y);
+  selected[key]=clamp(v,0,key==='x'?210-selected.w:297-selected.h);
+ }
  if(key==='rotation')selected.rotation=v;
  render(selected);
 }
 
 [['width','w'],['height','h'],['posX','x'],['posY','y'],['rotation','rotation']].forEach(([id,key])=>{
- $(id).addEventListener('input',e=>updateFromField(key,e.target.value));
+ $(id).addEventListener('input',e=>changeField(key,e.target.value));
 });
+
+$('unit').onchange=e=>{
+ unit=e.target.value;
+ if(selected)updateFields(selected);
+};
 
 $('ratio').onclick=()=>{
  if(!selected)return;
  selected.h=selected.w*selected.naturalH/selected.naturalW;
+ if(snapEnabled)selected.h=Math.max(CELL_Y,snapValue(selected.h,CELL_Y));
  render(selected);
- selectItem(selected);
+ updateFields(selected);
 };
 
 $('delete').onclick=()=>{
@@ -273,8 +374,10 @@ $('delete').onclick=()=>{
 
 $('duplicate').onclick=()=>{
  if(!selected)return;
- const original=selected;
- const item={...original,id:String(nextId++),x:Math.min(210-original.w,original.x+5),y:Math.min(297-original.h,original.y+5),el:null};
+ const source=selected;
+ const item={...source,id:String(nextId++),x:source.x+CELL_X,y:source.y+CELL_Y,el:null};
+ item.x=clamp(item.x,0,210-item.w);
+ item.y=clamp(item.y,0,297-item.h);
  const el=document.createElement('div');
  el.className='sticker';
  el.dataset.id=item.id;
@@ -293,7 +396,7 @@ $('duplicate').onclick=()=>{
 $('front').onclick=()=>{
  if(!selected)return;
  sheet.appendChild(selected.el);
- $('status').textContent='Naklejka przeniesiona na wierzch.';
+ $('status').textContent='Naklejka jest na wierzchu.';
 };
 
 $('gridButton').onclick=()=>{
@@ -302,12 +405,23 @@ $('gridButton').onclick=()=>{
  $('gridButton').textContent=gridVisible?'Ukryj siatkę':'Pokaż siatkę';
 };
 
+$('snap').onclick=()=>{
+ snapEnabled=!snapEnabled;
+ $('snap').textContent='Przyciąganie: '+(snapEnabled?'WŁ.':'WYŁ.');
+ $('snap').classList.toggle('active',snapEnabled);
+ if(selected&&snapEnabled){
+  snapPosition(selected);
+  render(selected);
+  updateFields(selected);
+ }
+ $('status').textContent='Przyciąganie do siatki '+(snapEnabled?'włączone.':'wyłączone.');
+};
+
 $('zoom').oninput=e=>{
- const z=Number(e.target.value)/70;
- sheetWrap.style.width=(793.7*z)+'px';
- sheetWrap.style.height=(1122.5*z)+'px';
- sheet.style.transform='scale('+z+')';
- sheet.style.transformOrigin='top left';
+ zoom=Number(e.target.value)/70;
+ sheet.style.transform='scale('+zoom+')';
+ sheetWrap.style.width=(793.7*zoom)+'px';
+ sheetWrap.style.height=(1122.5*zoom)+'px';
 };
 
 async function makePNG(src){
@@ -330,25 +444,20 @@ $('export').onclick=async()=>{
   return;
  }
  if(!window.jspdf){
-  alert('Nie udało się załadować biblioteki PDF. Sprawdź połączenie z internetem.');
+  alert('Nie udało się załadować biblioteki PDF. Sprawdź internet.');
   return;
  }
  try{
   $('export').disabled=true;
-  $('status').textContent='Przygotowywanie dokumentu PDF...';
+  $('status').textContent='Przygotowuję PDF...';
   const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF({
-   orientation:'portrait',
-   unit:'mm',
-   format:'a4',
-   compress:true
-  });
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
   for(const item of items){
    const data=await makePNG(item.src);
-   pdf.addImage(data,'PNG',item.x,item.y,item.w,item.h,undefined,'FAST');
+   pdf.addImage(data,'PNG',item.x,item.y,item.w,item.h,undefined,'FAST',item.rotation);
   }
   pdf.save('LEGO-Sticker-Studio-A4.pdf');
-  $('status').textContent='Gotowe! PDF został zapisany.';
+  $('status').textContent='PDF gotowy do wydruku!';
  }catch(err){
   console.error(err);
   alert('Wystąpił błąd podczas tworzenia PDF.');
