@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEGO Sticker Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #171923;
+  color: white;
+}
+header {
+  padding: 18px;
+  background: #242938;
+  text-align: center;
+}
+main { padding: 16px; }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+button, .upload {
+  background: #3978e8;
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  padding: 11px 15px;
+  cursor: pointer;
+}
+button:hover, .upload:hover { background: #245fc4; }
+input[type=file] { display: none; }
+.workspace {
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  padding: 15px;
+  background: #242938;
+  border-radius: 10px;
+}
+#sheet {
+  position: relative;
+  width: 794px;
+  height: 1123px;
+  flex-shrink: 0;
+  background: white;
+  background-image:
+    linear-gradient(to right, #dce1e8 1px, transparent 1px),
+    linear-gradient(to bottom, #dce1e8 1px, transparent 1px);
+  background-size: 30.24px 12.1px;
+  overflow: hidden;
+}
+.sticker {
+  position: absolute;
+  cursor: move;
+  border: 1px dashed #3978e8;
+  transform-origin: center;
+  user-select: none;
+}
+.sticker.selected {
+  outline: 2px solid #ff9d32;
+}
+.sticker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  object-fit: fill;
+}
+.controls {
+  margin-top: 15px;
+  padding: 15px;
+  background: #242938;
+  border-radius: 10px;
+}
+.controls input { max-width: 100%; }
+#empty { color: #333; text-align: center; padding-top: 40px; }
+</style>
+</head>
+<body>
+<header>
+  <h2>LEGO Sticker Tool</h2>
